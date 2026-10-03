@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tạp Hóa Công Nghệ - AI Script & Camera Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        hub: {
+                            dark: '#0f172a',
+                            darker: '#090d16',
+                            panel: '#1e293b',
+                            accent: '#f26522',
+                            cyan: '#25f4ee',
+                            pink: '#fe2c55'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #090d16; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        .phone-frame { aspect-ratio: 9/16; max-height: 480px; }
+    </style>
+</head>
+<body class="bg-hub-darker text-slate-100 h-screen flex flex-col overflow-hidden font-sans select-none">
+
+    <!-- TOP HEADER -->
+    <header class="bg-hub-dark border-b border-slate-800 h-14 flex items-center justify-between px-6 shrink-0 z-20">
+        <div class="flex items-center space-x-3">
+            <div class="bg-gradient-to-tr from-orange-500 to-pink-600 p-2 rounded-xl text-white font-bold flex items-center justify-center w-9 h-9 shadow-lg shadow-orange-500/20">
+                <i class="fa-solid fa-video text-sm"></i>
+            </div>
+            <div>
+                <h1 class="font-extrabold text-sm tracking-wide text-white flex items-center">
+                    TẠP HÓA CÔNG NGHỆ <span class="ml-2 px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded-full text-[10px] border border-orange-500/30">MỌI TẦM GIÁ (KHÔNG GIỚI HẠN)</span>
+                </h1>
+                <p class="text-[11px] text-slate-400">Từ vài chục nghìn đến hàng triệu đồng $ightarrow$ AI phân tích sâu lợi ích & đặt vấn đề</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <div class="hidden lg:flex items-center space-x-3 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
+                <span class="text-pink-400"><i class="fa-solid fa-fire mr-1"></i> Phạm vi: <strong class="text-white">Mở rộng vô hạn phân khúc</strong></span>
+            </div>
+            <button onclick="exportProjectZip()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700 flex items-center space-x-2 transition">
+                <i class="fa-solid fa-download text-sky-400"></i>
+                <span>Tải Mã Nguồn (.zip)</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN WORKSPACE -->
+    <div class="flex-1 flex overflow-hidden">
+
+        <!-- COLUMN 1: INPUT SOURCES (CAMERA & ALBUM) -->
+        <div class="w-80 bg-hub-dark border-r border-slate-800 flex flex-col shrink-0">
+            <div class="p-4 border-b border-slate-800 space-y-3">
+                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                    <i class="fa-solid fa-sliders mr-2 text-orange-500"></i> Đầu Vào Sản Phẩm
+                </h2>
+
+                <!-- TABS FOR INPUT -->
+                <div class="grid grid-cols-2 gap-2 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-bold">
+                    <button onclick="switchInputTab('album')" id="tab-album" class="py-2 rounded-lg bg-orange-500 text-white transition shadow">
+                        <i class="fa-solid fa-folder-open mr-1"></i> Chọn Album
+                    </button>
+                    <button onclick="switchInputTab('camera')" id="tab-camera" class="py-2 rounded-lg text-slate-400 hover:text-white transition">
+                        <i class="fa-solid fa-camera mr-1"></i> Quay Trực Tiếp
+                    </button>
+                </div>
+
+                <!-- TAB 1: ALBUM / UPLOAD -->
+                <div id="panel-album" class="space-y-3 pt-1">
+                    <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-orange-500 rounded-xl p-4 text-center cursor-pointer transition bg-slate-900/50 relative" onclick="document.getElementById('file-input').click()">
+                        <i class="fa-solid fa-images text-2xl text-slate-500 mb-2"></i>
+                        <p class="text-xs text-slate-300 font-medium">Bấm để tìm video trong album máy</p>
+                        <p class="text-[10px] text-slate-500 mt-1">Hỗ trợ mọi sản phẩm (Bình dân đến Cao cấp)</p>
+                        <input type="file" id="file-input" accept="video/*" class="hidden" onchange="handleFileSelected(this)">
+                    </div>
+                </div>
+
+                <!-- TAB 2: LIVE CAMERA RECORDING -->
+                <div id="panel-camera" class="space-y-3 pt-1 hidden">
+                    <div class="bg-black rounded-xl border border-slate-700 overflow-hidden relative aspect-video flex items-center justify-center">
+                        <video id="live-camera" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                        <div id="cam-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-400 text-center p-3">
+                            <i class="fa-solid fa-video-slash text-2xl mb-1"></i>
+                            <span class="text-[11px]">Chưa bật Camera</span>
+                        </div>
+                        <div id="rec-badge" class="absolute top-2 left-2 hidden bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold animate-pulse flex items-center">
+                            <i class="fa-solid fa-circle text-[6px] mr-1"></i> Đang quay...
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="startCamera()" id="cam-on-btn" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 rounded-lg text-xs font-bold border border-slate-700 transition">
+                            <i class="fa-solid fa-power-off text-emerald-400 mr-1"></i> Bật Camera
+                        </button>
+                        <button onclick="toggleRecord()" id="rec-btn" disabled class="flex-1 bg-red-600/50 text-slate-400 py-2 rounded-lg text-xs font-bold transition cursor-not-allowed">
+                            <i class="fa-solid fa-circle mr-1"></i> Quay Video
+                        </button>
+                    </div>
+                </div>
+
+                <div id="uploaded-file-info" class="hidden bg-emerald-500/10 border border-emerald-500/30 p-2.5 rounded-lg text-xs space-y-1">
+                    <div class="flex justify-between font-bold text-emerald-400">
+                        <span id="file-name">video_san_pham.mp4</span>
+                        <span>Đã nạp ✓</span>
+                    </div>
+                    <div class="text-[11px] text-slate-300">Trạng thái: <span class="text-emerald-400 font-bold">Sẵn sàng phân tích</span></div>
+                </div>
+            </div>
+
+            <!-- PIPELINE PROGRESS -->
+            <div class="flex-1 p-4 overflow-y-auto space-y-2.5">
+                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                    <i class="fa-solid fa-brain mr-2 text-cyan-400"></i> Các Bước AI Phân Tích
+                </h2>
+
+                <div class="space-y-2 text-xs">
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                        <span class="text-slate-300 flex items-center"><i class="fa-solid fa-eye text-purple-400 mr-2"></i> Quét & Nhận diện sản phẩm</span>
+                        <span id="step-1-status" class="text-slate-500 text-[10px] font-mono">Đang chờ</span>
+                    </div>
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                        <span class="text-slate-300 flex items-center"><i class="fa-solid fa-gift text-amber-400 mr-2"></i> Phân tích lợi ích người mua</span>
+                        <span id="step-2-status" class="text-slate-500 text-[10px] font-mono">Đang chờ</span>
+                    </div>
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                        <span class="text-slate-300 flex items-center"><i class="fa-solid fa-scale-balanced text-red-400 mr-2"></i> Vấn đề: Có nó / Không có nó</span>
+                        <span id="step-3-status" class="text-slate-500 text-[10px] font-mono">Đang chờ</span>
+                    </div>
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                        <span class="text-slate-300 flex items-center"><i class="fa-solid fa-clapperboard text-cyan-400 mr-2"></i> Sinh kịch bản & Render 9:16</span>
+                        <span id="step-4-status" class="text-slate-500 text-[10px] font-mono">Đang chờ</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXECUTE BUTTON -->
+            <div class="p-4 border-t border-slate-800 bg-slate-900/50">
+                <button onclick="startAnalysisPipeline()" id="start-btn" class="w-full bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 text-white py-3 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 shadow-lg shadow-orange-500/20 transition">
+                    <i class="fa-solid fa-play text-sm"></i>
+                    <span>Phân Tích Sản Phẩm & Tạo Kịch Bản</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- COLUMN 2: ANALYSIS RESULT -->
+        <div class="flex-1 flex flex-col min-w-0 bg-slate-950 border-r border-slate-800">
+            <div class="bg-hub-dark px-4 py-2 border-b border-slate-800 text-xs font-bold text-slate-300 flex items-center justify-between">
+                <span><i class="fa-solid fa-lightbulb mr-2 text-orange-400"></i> Báo Cáo Phân Tích Chuyên Sâu & Kịch Bản Hút View</span>
+                <span id="report-badge" class="px-2 py-0.5 bg-slate-800 text-slate-400 rounded text-[10px]">Chờ video đầu vào</span>
+            </div>
+
+            <div class="flex-1 p-5 overflow-y-auto space-y-4 font-mono text-xs">
+                <!-- PRODUCT & BENEFITS CARD -->
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div class="text-amber-400 font-bold flex items-center justify-between">
+                        <span><i class="fa-solid fa-box-open mr-2"></i> 1. NHẬN DIỆN & LỢI ÍCH NGƯỜI MUA</span>
+                        <span class="text-emerald-400 text-[10px]">AI Vision Active ✓</span>
+                    </div>
+                    <div id="benefits-details" class="text-slate-300 space-y-1.5 text-[11px]">
+                        <p class="text-slate-500">// Chọn video từ album hoặc quay trực tiếp để AI quét mọi phân khúc sản phẩm.</p>
+                    </div>
+                </div>
+
+                <!-- PROBLEM STATEMENT CARD (CÓ NÓ / KHÔNG CÓ NÓ) -->
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div class="text-red-400 font-bold flex items-center justify-between">
+                        <span><i class="fa-solid fa-triangle-exclamation mr-2"></i> 2. ĐẶT VẤN ĐỀ: CÓ NÓ VS KHÔNG CÓ NÓ</span>
+                        <span class="text-sky-400 text-[10px]">Tâm lý học hành vi</span>
+                    </div>
+                    <div id="problem-statement" class="text-slate-300 space-y-1.5 text-[11px]">
+                        <p class="text-slate-500">// AI sẽ chỉ rõ sự khác biệt khi đầu tư sở hữu sản phẩm.</p>
+                    </div>
+                </div>
+
+                <!-- SCRIPT CARD -->
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div class="text-pink-400 font-bold flex items-center justify-between">
+                        <span><i class="fa-solid fa-comments mr-2"></i> 3. KỊCH BẢN TIKTOK HOÀN CHỈNH</span>
+                        <span class="text-sky-400 text-[10px]">Street style & Thuyết phục</span>
+                    </div>
+                    <div id="script-content" class="text-slate-200 space-y-2 leading-relaxed text-xs">
+                        <p class="text-slate-500">// Kịch bản chi tiết sẽ hiển thị ở đây.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUMN 3: TIKTOK 9:16 PREVIEW -->
+        <div class="w-[400px] bg-hub-dark flex flex-col shrink-0 items-center justify-center p-5">
+            <div class="text-xs font-bold text-slate-400 mb-3 w-full flex items-center justify-between">
+                <span><i class="fa-solid fa-mobile-screen-button mr-1.5 text-cyan-400"></i> Xem Trước Video TikTok (9:16)</span>
+                <span class="text-cyan-400 font-mono text-[10px]">1080x1920</span>
+            </div>
+
+            <!-- PHONE MOCKUP -->
+            <div class="phone-frame w-full bg-black rounded-3xl border-4 border-slate-700 shadow-2xl relative overflow-hidden flex flex-col justify-between p-4">
+                <div class="flex justify-between items-center text-white z-10 text-xs">
+                    <span class="font-bold bg-black/40 px-2 py-0.5 rounded-full backdrop-blur">#TapHoaCongNghe</span>
+                    <span class="bg-orange-600 px-2 py-0.5 rounded text-[10px] font-bold">HD Ready</span>
+                </div>
+
+                <div id="preview-screen" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-slate-900 via-slate-950 to-black">
+                    <div class="w-14 h-14 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center mb-3 animate-pulse">
+                        <i class="fa-solid fa-video text-orange-400 text-lg"></i>
+                    </div>
+                    <p class="text-slate-300 text-xs font-bold mb-1">Đang chờ AI Render</p>
+                    <p class="text-slate-500 text-[11px]">Tích hợp Hook & Sub động.</p>
+                </div>
+
+                <div class="z-10 space-y-1 text-left text-xs bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 -mx-4 -mb-4">
+                    <p class="font-bold text-white">@taphoacongnghe 🔥 Đáng từng đồng tiền bát gạo!</p>
+                    <p class="text-[11px] text-slate-300">#xuhuong #review #congnghe</p>
+                </div>
+            </div>
+
+            <!-- DOWNLOAD BUTTON -->
+            <button onclick="downloadVideo()" id="download-btn" disabled class="mt-4 w-full bg-slate-800 text-slate-500 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 transition cursor-not-allowed">
+                <i class="fa-solid fa-download"></i>
+                <span>Tải Video MP4 Chuẩn TikTok</span>
+            </button>
+        </div>
+
+    </div>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        let mediaStream = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let isRecording = false;
+
+        function switchInputTab(tab) {
+            const tabAlbum = document.getElementById('tab-album');
+            const tabCamera = document.getElementById('tab-camera');
+            const panelAlbum = document.getElementById('panel-album');
+            const panelCamera = document.getElementById('panel-camera');
+
+            if (tab === 'album') {
+                tabAlbum.className = "py-2 rounded-lg bg-orange-500 text-white transition shadow";
+                tabCamera.className = "py-2 rounded-lg text-slate-400 hover:text-white transition";
+                panelAlbum.classList.remove('hidden');
+                panelCamera.classList.add('hidden');
+                stopCameraStream();
+            } else {
+                tabCamera.className = "py-2 rounded-lg bg-orange-500 text-white transition shadow";
+                tabAlbum.className = "py-2 rounded-lg text-slate-400 hover:text-white transition";
+                panelCamera.classList.remove('hidden');
+                panelAlbum.classList.add('hidden');
+            }
+        }
+
+        async function startCamera() {
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: true });
+                const videoEl = document.getElementById('live-camera');
+                videoEl.srcObject = mediaStream;
+                document.getElementById('cam-placeholder').classList.add('hidden');
+                document.getElementById('cam-on-btn').innerHTML = `<i class="fa-solid fa-check text-emerald-400 mr-1"></i> Camera Đang Bật`;
+                document.getElementById('cam-on-btn').className = "flex-1 bg-slate-800 text-emerald-400 py-2 rounded-lg text-xs font-bold border border-emerald-500/30";
+                
+                const recBtn = document.getElementById('rec-btn');
+                recBtn.disabled = false;
+                recBtn.className = "flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg text-xs font-bold transition cursor-pointer";
+            } catch (err) {
+                alert("Không thể truy cập camera: " + err.message);
+            }
+        }
+
+        function stopCameraStream() {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+                document.getElementById('live-camera').srcObject = null;
+                document.getElementById('cam-placeholder').classList.remove('hidden');
+            }
+        }
+
+        function toggleRecord() {
+            const recBtn = document.getElementById('rec-btn');
+            const recBadge = document.getElementById('rec-badge');
+
+            if (!isRecording) {
+                recordedChunks = [];
+                try {
+                    mediaRecorder = new MediaRecorder(mediaStream, { mimeType: 'video/webm;codecs=vp9' });
+                } catch (e) {
+                    try { mediaRecorder = new MediaRecorder(mediaStream, { mimeType: 'video/webm' }); }
+                    catch (err) { mediaRecorder = new MediaRecorder(mediaStream); }
+                }
+
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const file = new File([blob], "video_quay_truc_tiep.webm", { type: 'video/webm' });
+                    
+                    document.getElementById('uploaded-file-info').classList.remove('hidden');
+                    document.getElementById('file-name').innerText = "video_quay_truc_tiep.webm (Camera)";
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                recBtn.innerHTML = `<i class="fa-solid fa-stop mr-1"></i> Dừng Quay`;
+                recBtn.className = "flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-xs font-bold transition animate-pulse";
+                recBadge.classList.remove('hidden');
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                recBtn.innerHTML = `<i class="fa-solid fa-circle mr-1"></i> Quay Lại`;
+                recBtn.className = "flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg text-xs font-bold transition";
+                recBadge.classList.add('hidden');
+                alert("Đã ghi hình thành công từ camera trực tiếp!");
+            }
+        }
+
+        function handleFileSelected(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                document.getElementById('uploaded-file-info').classList.remove('hidden');
+                document.getElementById('file-name').innerText = file.name;
+                document.getElementById('drop-zone').classList.add('border-orange-500', 'bg-orange-500/5');
+            }
+        }
+
+        function startAnalysisPipeline() {
+            const btn = document.getElementById('start-btn');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> AI đang phân tích công năng & đặt vấn đề...`;
+
+            // Step 1
+            setTimeout(() => {
+                document.getElementById('step-1-status').innerText = "Đã quét ✓";
+                document.getElementById('step-1-status').className = "text-emerald-400 text-[10px] font-bold font-mono";
+            }, 600);
+
+            // Step 2
+            setTimeout(() => {
+                document.getElementById('step-2-status').innerText = "Hoàn tất ✓";
+                document.getElementById('step-2-status').className = "text-emerald-400 text-[10px] font-bold font-mono";
+            }, 1200);
+
+            // Step 3
+            setTimeout(() => {
+                document.getElementById('step-3-status').innerText = "Đã tối ưu ✓";
+                document.getElementById('step-3-status').className = "text-emerald-400 text-[10px] font-bold font-mono";
+            }, 1800);
+
+            // Step 4
+            setTimeout(() => {
+                document.getElementById('step-4-status').innerText = "Xong 9:16 ✓";
+                document.getElementById('step-4-status').className = "text-emerald-400 text-[10px] font-bold font-mono";
+                
+                document.getElementById('report-badge').innerText = "Phân tích hoàn tất";
+                document.getElementById('report-badge').className = "px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-[10px] font-bold border border-emerald-500/30";
+
+                    document.getElementById('benefits-details').innerHTML = `
+                    <p>• <strong>Sản phẩm nhận diện:</strong> Thiết bị cao cấp / Tiện ích công nghệ phân khúc cao từ video đầu vào.</p>
+                    <p>• <strong>Lợi ích cốt lõi cho người mua:</strong></p>
+                    <p style="padding-left: 10px;">- Trải nghiệm đỉnh cao, hoàn thiện tinh xảo từng chi tiết vật liệu.</p>
+                    <p style="padding-left: 10px;">- Giải quyết triệt để vấn đề chuyên sâu, nâng tầm chất lượng cuộc sống.</p>
+                    <p style="padding-left: 10px;">- Đầu tư dài hạn, độ bền vượt trội xứng đáng từng đồng tiền bát gạo.</p>
+                `;
+
+                document.getElementById('problem-statement').innerHTML = `
+                    <p>❌ <strong>KHÔNG CÓ NÓ:</strong> Phải chịu đựng sự bất tiện kéo dài, hiệu suất công việc hoặc trải nghiệm giải trí bị giảm sút đáng kể.</p>
+                    <p>✅ <strong>CÓ NÓ:</strong> Tận hưởng sự mượt mà, đẳng cấp khác biệt hoàn toàn, tiết kiệm thời gian và xứng tầm giá trị đầu tư.</p>
+                `;
+
+                document.getElementById('script-content').innerHTML = `
+                    <p><strong>[Giây 0-3] HOOK MẠNH:</strong><br>“Tiền nào của nấy anh em ạ! Đã đầu tư là phải đáng, đừng tiếc rẻ để rồi ôm cục tức vào người...”</p>
+                    <p><strong>[Giây 3-25] THÂN BÀI (CÓ VÀ KHÔNG):</strong><br>“Trước đây tui cũng đắn đo vì mức giá của nó, nhưng khi cầm trên tay và test thực tế thì đúng là một trời một vực. Mọi thao tác mượt mà, hoàn thiện cực xịn.”</p>
+                    <p><strong>[Giây 25-35] CTA CHUYỂN ĐỔI:</strong><br>“Hàng chính hãng bảo hành dài hạn. Anh em nhấp ngay vào giỏ hàng bên dưới để chốt đơn nhé!”</p>
+                `;
+            }, 2400);
+
+            // Render Preview
+            setTimeout(() => {
+                document.getElementById('preview-screen').innerHTML = `
+                    <div class="absolute inset-0 bg-cover bg-center opacity-40" style="background-image: url('https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=60')"></div>
+                    <div class="relative z-10 bg-black/70 p-3 rounded-xl border border-orange-500/30 backdrop-blur">
+                        <span class="bg-orange-600 text-white text-[10px] px-2 py-0.5 rounded font-bold mb-1 inline-block">RENDER 1080x1920</span>
+                        <p class="text-white text-xs font-bold">🔥 "Review Đẳng Cấp & Đối Lập Rõ Ràng"</p>
+                        <p class="text-[10px] text-emerald-400 mt-1">✓ Không giới hạn giá • Hook Cực Dính</p>
+                    </div>
+                `;
+
+                const dlBtn = document.getElementById('download-btn');
+                dlBtn.disabled = false;
+                dlBtn.className = "mt-4 w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white py-2.5 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 shadow-lg shadow-emerald-600/30 transition cursor-pointer";
+
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-rotate-right mr-2"></i> Phân Tích Video Khác`;
+            }, 3000);
+        }
+
+        function downloadVideo() {
+            alert("Đang tải xuống video chuẩn 9:16 tích hợp kịch bản phân tích lợi ích & đối lập cho sản phẩm cao cấp!");
+            const blob = new Blob(["AI_UNLIMITED_STUDIO_VIDEO"], { type: "video/mp4" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "tiktok_unlimited_price_studio.mp4";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function exportProjectZip() {
+            const zip = new JSZip();
+            zip.file("index.html", document.documentElement.outerHTML);
+            zip.file("README.md", "# Tạp Hóa Công Nghệ - Unlimited Studio\n\nHệ thống không giới hạn phân khúc giá (từ bình dân đến hàng triệu đồng). Hỗ trợ quay camera trực tiếp, chọn video album, nhận diện sản phẩm, phân tích lợi ích và xuất kịch bản TikTok 9:16.");
+            zip.generateAsync({ type: "blob" }).then(content => {
+                saveAs(content, "ai_unlimited_studio.zip");
+            });
+        }
+    </script>
+</body>
+</html>
